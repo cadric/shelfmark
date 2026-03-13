@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -49,6 +50,7 @@ AUDIBLE_MAX_LIMIT = 50
 AUDIBLE_SERIES_SUGGESTION_LIMIT = 7
 
 _ISBN_CLEAN_RE = re.compile(r"[^0-9Xx]")
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 _AUDIBLE_REGION_OPTIONS = [
     {"value": "us", "label": "United States"},
@@ -167,6 +169,25 @@ def _format_narrator_value(names: List[str]) -> Optional[str]:
     if len(names) == 1:
         return names[0]
     return f"{names[0]} +{len(names) - 1}"
+
+
+def _sanitize_description(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
+    text = re.sub(r"(?i)</p\s*>", "\n\n", text)
+    text = re.sub(r"(?i)<p[^>]*>", "", text)
+    text = html.unescape(_HTML_TAG_RE.sub("", text))
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n[ \t]+", "\n", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text.strip() or None
 
 
 def _coerce_list_payload(payload: Any) -> List[Dict[str, Any]]:
@@ -474,7 +495,7 @@ class AudibleProvider(MetadataProvider):
 
             seen_values.add(series_asin)
             option: Dict[str, str] = {
-                "value": f"asin:{series_asin}",
+                "value": f"id:{series_asin}",
                 "label": series_name,
             }
             region = str(item.get("region") or "").strip()
@@ -515,14 +536,11 @@ class AudibleProvider(MetadataProvider):
         if not normalized_query:
             return None
 
-        if normalized_query.lower().startswith("asin:"):
+        normalized_lower = normalized_query.lower()
+        if normalized_lower.startswith("asin:") or normalized_lower.startswith("id:"):
             series_asin = normalized_query.split(":", 1)[1].strip()
             if not series_asin:
                 return None
-            options = self._get_series_options_cached(f"{self.base_url}:{series_asin}", series_asin)
-            for option in options:
-                if option["value"] == f"asin:{series_asin}":
-                    return {"asin": series_asin, "name": option["label"]}
             return {"asin": series_asin, "name": series_asin}
 
         response = self._make_request(
@@ -768,7 +786,8 @@ class AudibleProvider(MetadataProvider):
             isbn_10=isbn_10,
             isbn_13=isbn_13,
             cover_url=str(item.get("imageUrl") or "").strip() or None,
-            description=(str(item.get("description") or "").strip() or str(item.get("summary") or "").strip() or None),
+            description=_sanitize_description(item.get("description"))
+            or _sanitize_description(item.get("summary")),
             publisher=str(item.get("publisher") or "").strip() or None,
             publish_year=_extract_publish_year(item.get("releaseDate")),
             language=str(item.get("language") or "").strip() or None,

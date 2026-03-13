@@ -119,6 +119,7 @@ class TestAudibleProvider:
         assert book.provider_id == "B017V4IM1G"
         assert book.isbn_10 is None
         assert book.isbn_13 == "9780590353427"
+        assert book.description == "Wizard boy."
         assert book.series_name == "Harry Potter"
         assert book.series_position == 1.0
         assert [field.label for field in book.display_fields] == [
@@ -127,6 +128,24 @@ class TestAudibleProvider:
             "Narrator",
             "Format",
         ]
+
+    def test_get_book_falls_back_to_sanitized_summary_when_description_is_blank(self, monkeypatch):
+        provider = AudibleProvider(region="us")
+
+        payload = _sample_book()
+        payload["description"] = "   "
+        payload["summary"] = "<p>Summary <strong>text</strong>.</p>"
+
+        monkeypatch.setattr(
+            provider,
+            "_make_request",
+            lambda endpoint, *, params, include_region: payload,
+        )
+
+        book = provider.get_book("B017V4IM1G")
+
+        assert book is not None
+        assert book.description == "Summary text."
 
     def test_search_by_isbn_falls_back_to_search_when_db_lookup_is_empty(self, monkeypatch):
         provider = AudibleProvider(region="us")
@@ -283,8 +302,8 @@ class TestAudibleProvider:
         options = provider.get_search_field_options("series", query="harry")
 
         assert options == [
-            {"value": "asin:SERIES1", "label": "Harry Potter", "description": "US"},
-            {"value": "asin:SERIES2", "label": "Wizarding World"},
+            {"value": "id:SERIES1", "label": "Harry Potter", "description": "US"},
+            {"value": "id:SERIES2", "label": "Wizarding World"},
         ]
 
     def test_fetch_series_books_sorts_by_series_position(self, monkeypatch):
@@ -328,3 +347,27 @@ class TestAudibleProvider:
         assert result.total_found == 3
         assert result.has_more is True
         assert result.source_title == "Harry Potter"
+
+    def test_series_browse_accepts_frontend_id_prefixed_series_values(self, monkeypatch):
+        provider = AudibleProvider()
+
+        monkeypatch.setattr(
+            provider,
+            "_fetch_series_books",
+            lambda series_asin, preferred_series_asin=None: [
+                BookMetadata(provider="audible", provider_id="B1", title="First", series_position=1.0),
+            ],
+        )
+
+        result = provider.search_paginated(
+            MetadataSearchOptions(
+                query="",
+                sort=SortOrder.SERIES_ORDER,
+                limit=20,
+                page=1,
+                fields={"series": "id:SERIES1"},
+            )
+        )
+
+        assert [book.provider_id for book in result.books] == ["B1"]
+        assert result.source_title == "SERIES1"
