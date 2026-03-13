@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const STORAGE_KEY = 'cwa-config-banner-dismissed';
 
@@ -19,6 +20,7 @@ export const ConfigSetupBanner = ({
   onContinue,
   settingsEnabled,
 }: ConfigSetupBannerProps) => {
+  const { t } = useTranslation();
   const [autoShowVisible, setAutoShowVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
@@ -79,17 +81,17 @@ export const ConfigSetupBanner = ({
         style={{ background: 'var(--bg)' }}
         role="dialog"
         aria-modal="true"
-        aria-label="Settings Setup Information"
+        aria-label={t('banner.settingsSetupInformation')}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-(--border-muted)">
           <h2 className="text-lg font-semibold">
-            {showContinueButton ? 'Config Volume Required' : 'New Feature: Settings Page'}
+            {showContinueButton ? t('banner.configVolumeRequired') : t('banner.newFeatureSettingsPage')}
           </h2>
           <button
             onClick={handleClose}
             className="p-1.5 rounded-lg hover:bg-(--hover-surface) transition-colors"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -108,8 +110,8 @@ export const ConfigSetupBanner = ({
         <div className="px-5 py-4 space-y-4">
           <p className="text-sm opacity-80">
             {showContinueButton
-              ? 'To save settings, add a config volume to your Docker Compose file:'
-              : 'Shelfmark now has a settings page! To enable it, add a config volume to your Docker Compose file:'}
+              ? t('banner.continueModeDescription')
+              : t('banner.autoModeDescription')}
           </p>
 
           {/* Code snippet */}
@@ -133,8 +135,8 @@ export const ConfigSetupBanner = ({
 
           <p className="text-xs opacity-60">
             {showContinueButton
-              ? 'Without this volume, settings changes will not persist across container restarts.'
-              : 'This allows you to configure settings through the UI and persist them across container restarts.'}
+              ? t('banner.continueModeFootnote')
+              : t('banner.autoModeFootnote')}
           </p>
         </div>
 
@@ -148,7 +150,7 @@ export const ConfigSetupBanner = ({
                            bg-(--bg-soft) border border-(--border-muted)
                            hover:bg-(--hover-surface) transition-colors"
               >
-                Close
+                {t('common.close')}
               </button>
               <button
                 onClick={handleContinue}
@@ -156,7 +158,7 @@ export const ConfigSetupBanner = ({
                            bg-(--primary-color) text-white
                            hover:bg-(--primary-dark) transition-colors"
               >
-                Continue to Settings
+                {t('common.continueToSettings')}
               </button>
             </>
           ) : (
@@ -166,7 +168,7 @@ export const ConfigSetupBanner = ({
                          bg-(--primary-color) text-white
                          hover:bg-(--primary-dark) transition-colors"
             >
-              Got it
+              {t('common.gotIt')}
             </button>
           )}
         </div>

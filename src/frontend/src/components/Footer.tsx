@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface FooterProps {
   buildVersion?: string;
   releaseVersion?: string;
@@ -5,6 +7,7 @@ interface FooterProps {
 }
 
 export const Footer = ({ buildVersion, releaseVersion, debug }: FooterProps) => {
+  const { t } = useTranslation();
   // Determine version display - show "dev" if no version is set
   const versionDisplay = releaseVersion && releaseVersion !== 'N/A'
     ? releaseVersion
@@ -33,14 +36,14 @@ export const Footer = ({ buildVersion, releaseVersion, debug }: FooterProps) => 
         </a>
         <span
           className="text-xs opacity-40 font-normal"
-          title={buildVersion && buildVersion !== 'N/A' ? `Build: ${buildVersion}` : undefined}
+          title={buildVersion && buildVersion !== 'N/A' ? t('footer.buildTitle', { build: buildVersion }) : undefined}
         >
           {versionDisplay}
           {truncatedBuild && ` (${truncatedBuild})`}
         </span>
         {debug && (
           <span className="text-xs px-1.5 py-0.5 rounded-sm opacity-60" style={{ background: 'var(--border-muted)' }}>
-            Debug
+            {t('footer.debug')}
           </span>
         )}
       </div>

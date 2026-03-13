@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { SocketProvider } from './contexts/SocketContext';
 import App from './App';
 import { getBasePath } from './utils/basePath';
+import './i18n';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Root element not found');

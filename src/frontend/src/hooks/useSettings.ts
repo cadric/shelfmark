@@ -13,6 +13,11 @@ import {
   THEME_FIELD,
 } from '../utils/themePreference';
 import {
+  getStoredLanguagePreference,
+  setLanguagePreference,
+  LANGUAGE_FIELD,
+} from '../utils/languagePreference';
+import {
   cloneSettingsValues,
   extractSettingsValues,
   getRestartRequiredFieldKeys,
@@ -72,7 +77,7 @@ export function useSettings(): UseSettingsReturn {
         if (tab.name === 'general') {
           return {
             ...tab,
-            fields: [THEME_FIELD, ...tab.fields],
+            fields: [LANGUAGE_FIELD, THEME_FIELD, ...tab.fields],
           };
         }
         return tab;
@@ -84,6 +89,7 @@ export function useSettings(): UseSettingsReturn {
       const initialValues = extractSettingsValues(tabsWithTheme);
       if (initialValues.general && Object.prototype.hasOwnProperty.call(initialValues.general, '_THEME')) {
         initialValues.general._THEME = getStoredThemePreference();
+        initialValues.general._LANGUAGE = getStoredLanguagePreference();
       }
 
       const nextValues = preserveDirtyValues
@@ -130,6 +136,17 @@ export function useSettings(): UseSettingsReturn {
     if (key === '_THEME' && typeof value === 'string') {
       setThemePreference(value);
       // Also update original value so it doesn't show as pending change
+      setOriginalValues((prev) => ({
+        ...prev,
+        [tabName]: {
+          ...prev[tabName],
+          [key]: value,
+        },
+      }));
+    }
+
+    if (key === '_LANGUAGE' && typeof value === 'string') {
+      void setLanguagePreference(value);
       setOriginalValues((prev) => ({
         ...prev,
         [tabName]: {
@@ -188,7 +205,7 @@ export function useSettings(): UseSettingsReturn {
         if (tab) {
           for (const field of getValueBearingFields(tab.fields)) {
             if (field.fromEnv) continue; // Skip env-locked fields
-            if (field.key === '_THEME') continue; // Skip client-side only theme field
+            if (field.key === '_THEME' || field.key === '_LANGUAGE') continue; // Skip client-side only fields
 
             const value = tabValues[field.key];
             const originalValue = originalTabValues[field.key];

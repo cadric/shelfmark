@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchMode } from '../contexts/SearchModeContext';
 import {
   ContentType,
@@ -108,12 +109,15 @@ const CheckIcon = ({ className = 'w-3.5 h-3.5' }: { className?: string }) => (
 const getDefaultPlaceholder = (
   contentType: ContentType,
   activeQueryTarget: QueryTargetOption | undefined,
+  translate: (key: string, options?: Record<string, unknown>) => string,
   fallback?: string,
 ): string => {
   if (fallback) return fallback;
 
   if (!activeQueryTarget || activeQueryTarget.source === 'general') {
-    return contentType === 'ebook' ? 'Search Books' : 'Search Audiobooks';
+    return contentType === 'ebook'
+      ? translate('search.searchBooks')
+      : translate('search.searchAudiobooks');
   }
 
   if (activeQueryTarget.source === 'manual') {
@@ -125,7 +129,7 @@ const getDefaultPlaceholder = (
     return field.placeholder;
   }
 
-  return `Search by ${activeQueryTarget.label.toLowerCase()}…`;
+  return translate('search.searchByTarget', { target: activeQueryTarget.label.toLowerCase() });
 };
 
 const hasActiveValue = (value: string | number | boolean): boolean => {
@@ -154,14 +158,14 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
   onAdvancedToggle,
   isAdvancedActive = false,
   placeholder,
-  inputAriaLabel = 'Search books',
+  inputAriaLabel,
   className = '',
   inputClassName = '',
   controlsClassName = '',
-  clearButtonLabel = 'Clear search input',
-  clearButtonTitle = 'Clear search',
-  searchButtonLabel = 'Search books',
-  searchButtonTitle = 'Search',
+  clearButtonLabel,
+  clearButtonTitle,
+  searchButtonLabel,
+  searchButtonTitle,
   autoComplete = 'off',
   enterKeyHint = 'search',
   contentType = 'ebook',
@@ -173,6 +177,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
   activeQueryField,
   disabled = false,
 }, ref) => {
+  const { t } = useTranslation();
   const { searchMode } = useSearchMode();
   const inputRef = useRef<HTMLInputElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -256,12 +261,12 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
       : 2;
   const autocompleteEmptyMessage =
     activeQueryField?.key === 'author'
-      ? 'No authors found'
+      ? t('search.noAuthorsFound')
       : activeQueryField?.key === 'title'
-        ? 'No titles found'
+        ? t('search.noTitlesFound')
         : activeQueryField?.key === 'series'
-          ? 'No series found'
-          : 'No suggestions found';
+          ? t('search.noSeriesFound')
+          : t('search.noSuggestionsFound');
 
   useEffect(() => {
     if (!dynamicEndpoint) {
@@ -404,10 +409,18 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
     setIsSelectorOpen(false);
   };
 
-  const effectivePlaceholder = getDefaultPlaceholder(contentType, activeTarget, placeholder);
+  const effectivePlaceholder = getDefaultPlaceholder(contentType, activeTarget, t, placeholder);
+  const defaultInputAriaLabel = contentType === 'ebook'
+    ? t('search.searchBooksButton')
+    : t('search.searchAudiobooksButton');
+  const effectiveBaseInputAriaLabel = inputAriaLabel || defaultInputAriaLabel;
   const effectiveInputAriaLabel = activeTarget
-    ? `${inputAriaLabel}: ${activeTarget.label}`
-    : inputAriaLabel;
+    ? `${effectiveBaseInputAriaLabel}: ${activeTarget.label}`
+    : effectiveBaseInputAriaLabel;
+  const effectiveClearButtonLabel = clearButtonLabel || t('search.clearSearchInput');
+  const effectiveClearButtonTitle = clearButtonTitle || t('search.clearSearch');
+  const effectiveSearchButtonLabel = searchButtonLabel || defaultInputAriaLabel;
+  const effectiveSearchButtonTitle = searchButtonTitle || t('search.search');
 
   const selectDropdownOpen = isSelectField && isSelectOpen && selectOptions.length > 0;
   const autocompleteDropdownOpen =
@@ -536,7 +549,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
             aria-expanded={isSelectOpen}
           >
             {isDynamicLoading ? (
-              <span className="opacity-50 truncate">Loading…</span>
+              <span className="opacity-50 truncate">{t('common.loading')}</span>
             ) : selectedOption ? (
               <span className="truncate">{selectedOption.label}</span>
             ) : (
@@ -611,7 +624,10 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
               onClick={() => { setIsSelectorOpen((prev) => !prev); setIsSelectOpen(false); setIsAutocompleteOpen(false); }}
               className="flex items-center gap-1.5 pl-5 pr-2 rounded-l-full transition-colors hover-action"
               style={{ color: 'var(--text)' }}
-              aria-label={`Searching ${contentType === 'ebook' ? 'books' : 'audiobooks'} by ${activeTarget?.label ?? 'general'}. Click to change.`}
+              aria-label={t('search.searchContextAria', {
+                contentType: contentType === 'ebook' ? t('search.booksLower') : t('search.audiobooksLower'),
+                target: activeTarget?.label ?? t('search.general'),
+              })}
               aria-expanded={isSelectorOpen}
               aria-haspopup="dialog"
             >
@@ -646,13 +662,13 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
                   borderColor: 'var(--border-muted)',
                 }}
                 role="dialog"
-                aria-label="Search context"
+                aria-label={t('search.searchContext')}
               >
                 <div className="max-h-[min(24rem,calc(100vh-8rem))] overflow-y-auto p-3">
                   {showContentTypeSelector && (
                     <div className="border-b pb-3" style={{ borderColor: 'var(--border-muted)' }}>
                       <div className="px-1 pb-2 text-xs font-medium uppercase tracking-wide opacity-60">
-                        Content
+                        {t('search.content')}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <button
@@ -666,7 +682,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
                             : { borderColor: 'rgb(16 185 129 / 0.7)' }}
                         >
                           {contentType === 'ebook' ? <CheckIcon /> : <BookIcon />}
-                          <span>Books</span>
+                          <span>{t('search.books')}</span>
                         </button>
                         <button
                           type="button"
@@ -679,7 +695,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
                             : { borderColor: 'rgb(16 185 129 / 0.7)' }}
                         >
                           {contentType === 'audiobook' ? <CheckIcon /> : <AudiobookIcon />}
-                          <span>Audiobooks</span>
+                          <span>{t('search.audiobooks')}</span>
                         </button>
                       </div>
                     </div>
@@ -687,7 +703,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
 
                   <div className={showContentTypeSelector ? 'pt-3' : ''}>
                     <div className="px-1 pb-2 text-xs font-medium uppercase tracking-wide opacity-60">
-                      Search By
+                      {t('search.searchBy')}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {queryTargets.map((target) => {
@@ -750,7 +766,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
                             />
                           </svg>
                         )}
-                        Options & Filters
+                        {t('search.optionsAndFilters')}
                       </button>
                     </div>
                   )}
@@ -770,8 +786,8 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
             type="button"
             onClick={handleClearSearch}
             className="p-2 rounded-full hover-action flex items-center justify-center transition-colors"
-            aria-label={clearButtonLabel}
-            title={clearButtonTitle}
+            aria-label={effectiveClearButtonLabel}
+            title={effectiveClearButtonTitle}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -796,8 +812,8 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
               ? 'bg-emerald-600 hover:bg-emerald-700'
               : 'bg-sky-700 hover:bg-sky-800'
           }`}
-          aria-label={searchButtonLabel}
-          title={searchButtonTitle}
+          aria-label={effectiveSearchButtonLabel}
+          title={effectiveSearchButtonTitle}
           disabled={isLoading}
         >
           {!isLoading && (
@@ -872,12 +888,12 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({
           className="absolute top-full left-0 right-0 z-50 mt-2 rounded-2xl border shadow-xl overflow-hidden animate-fade-in-down"
           style={{ background: 'var(--bg)', borderColor: 'var(--border-muted)' }}
           role="listbox"
-          aria-label={`${effectiveInputAriaLabel} suggestions`}
+          aria-label={t('search.suggestionsAria', { label: effectiveInputAriaLabel })}
         >
           <div className="max-h-72 overflow-y-auto py-1.5">
             {isAutocompleteLoading && (
               <div className="px-5 py-3 text-sm opacity-70" style={{ color: 'var(--text)' }}>
-                Searching…
+                {t('search.searching')}
               </div>
             )}
 

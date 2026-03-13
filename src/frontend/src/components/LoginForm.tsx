@@ -1,4 +1,5 @@
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { LoginCredentials } from '../types';
 import { withBasePath } from '../utils/basePath';
@@ -63,6 +64,7 @@ const PasswordLoginForm = ({
   isLoading: boolean;
   autoFocus: boolean;
 }) => {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -95,7 +97,7 @@ const PasswordLoginForm = ({
     >
       <div className="mb-4">
         <label htmlFor="username" className="block text-sm font-medium mb-2">
-          Username
+          {t('auth.username')}
         </label>
         <input
           ref={usernameRef}
@@ -124,7 +126,7 @@ const PasswordLoginForm = ({
 
       <div className="mb-4">
         <label htmlFor="password" className="block text-sm font-medium mb-2">
-          Password
+          {t('auth.password')}
         </label>
         <div className="relative">
           <input
@@ -154,7 +156,7 @@ const PasswordLoginForm = ({
             onClick={() => setShowPassword((current) => !current)}
             disabled={isLoading}
             className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full hover-action disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
           >
             {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
           </button>
@@ -173,7 +175,7 @@ const PasswordLoginForm = ({
           style={{ borderColor: 'var(--border-color)' }}
         />
         <label htmlFor="remember-me" className="ml-2 text-sm">
-          Remember me for 7 days
+          {t('auth.rememberMe')}
         </label>
       </div>
 
@@ -182,7 +184,7 @@ const PasswordLoginForm = ({
         name="submit"
         disabled={isLoading}
         className="w-full py-2.5 px-4 rounded-lg font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-sky-700 hover:bg-sky-800 disabled:hover:bg-sky-700"
-        aria-label="Sign in"
+        aria-label={t('auth.signIn')}
       >
         {isLoading ? (
           <span className="flex items-center justify-center">
@@ -206,10 +208,10 @@ const PasswordLoginForm = ({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            Signing in...
+            {t('auth.signingIn')}
           </span>
         ) : (
-          'Sign In'
+          t('auth.signIn')
         )}
       </button>
     </form>
@@ -226,6 +228,7 @@ export const LoginForm = ({
   hideLocalAuth = false,
   oidcAutoRedirect = false,
 }: LoginFormProps) => {
+  const { t } = useTranslation();
   const isOidc = authMode === 'oidc';
   const [showPasswordLogin, setShowPasswordLogin] = useState(false);
   const [searchParams] = useSearchParams();
@@ -277,7 +280,7 @@ export const LoginForm = ({
             href={oidcLoginUrl}
             className="w-full py-2.5 px-4 rounded-lg font-medium text-white text-center transition-colors block bg-sky-700 hover:bg-sky-800"
           >
-            {oidcButtonLabel || 'Sign in with OIDC'}
+            {oidcButtonLabel || t('auth.signInWithOidc')}
           </a>
 
           {!hideLocalAuth && (
@@ -289,7 +292,7 @@ export const LoginForm = ({
                   onClick={() => setShowPasswordLogin((prev) => !prev)}
                   className="px-3 text-sm opacity-60 hover:opacity-100 transition-opacity"
                 >
-                  {showPasswordLogin ? 'Hide' : 'Use password'}
+                  {showPasswordLogin ? t('auth.hide') : t('auth.usePassword')}
                 </button>
                 <div className="flex-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
               </div>
